@@ -1,0 +1,2 @@
+*.glb filter=lfs diff=lfs merge=lfs -text
+model.glb filter=lfs diff=lfs merge=lfs -text
