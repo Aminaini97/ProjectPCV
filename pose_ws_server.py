@@ -1,4 +1,4 @@
-# pose_ws_server.py (FINAL COMPLETE VERSION)
+# pose_ws_server.py
 import asyncio
 import json
 import math
@@ -15,7 +15,6 @@ mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
-
 # -------------------------------------------------------
 # Helper functions
 # -------------------------------------------------------
@@ -29,7 +28,6 @@ def angle_between(p1, p2):
 
 def dist(p1, p2):
     return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
-
 
 def compute_pose_data(landmarks, width, height):
     lm = landmarks
@@ -51,14 +49,59 @@ def compute_pose_data(landmarks, width, height):
         "right_knee": mp_pose.PoseLandmark.RIGHT_KNEE,
         "left_ank": mp_pose.PoseLandmark.LEFT_ANKLE,
         "right_ank": mp_pose.PoseLandmark.RIGHT_ANKLE,
-        "nose": mp_pose.PoseLandmark.NOSE
+        "nose": mp_pose.PoseLandmark.NOSE,
+        "left_index": mp_pose.PoseLandmark.LEFT_INDEX,
+        "right_index": mp_pose.PoseLandmark.RIGHT_INDEX,
     }
 
     pix = {name: to_pixel(lm[idx], width, height) for name, idx in pairs.items()}
     norm_pos = {f"{name}_pos": norm(lm[idx]) for name, idx in pairs.items()}
 
+    # --- TAMBAHAN LOGIKA HITUNG TENGAH (UNTUK BADAN & BAHU) ---
+    # Hitung titik tengah bahu (pusat leher)
+    mid_sh_x = (pix["left_sh"][0] + pix["right_sh"][0]) / 2
+    mid_sh_y = (pix["left_sh"][1] + pix["right_sh"][1]) / 2
+    mid_sh = (mid_sh_x, mid_sh_y)
+
+    # Hitung titik tengah pinggul (pusat badan)
+    mid_hip_x = (pix["left_hip"][0] + pix["right_hip"][0]) / 2
+    mid_hip_y = (pix["left_hip"][1] + pix["right_hip"][1]) / 2
+    mid_hip = (mid_hip_x, mid_hip_y)
+
+    # Hitung Sudut Baru
+    hip_angle = angle_between(mid_hip, mid_sh) # Kemiringan badan
+    l_sh_angle = angle_between(mid_sh, pix["left_sh"]) # Bahu kiri naik/turun
+    r_sh_angle = angle_between(mid_sh, pix["right_sh"]) # Bahu kanan naik/turun
+    # ----------------------------------------------------------
+
     data = {
         "timestamp": time.time(),
+        
+        "root_position": {
+
+            # Ambil rata-rata pinggul kiri (23) dan kanan (24)
+
+            "x": (lm[23].x + lm[24].x) / 2,
+
+            "y": (lm[23].y + lm[24].y) / 2
+
+        },
+
+        # ----------------------------
+
+        # --- DATA BARU DISISIPKAN DISINI ---
+        "hip": { "angle": hip_angle },
+        "left_shoulder": { "angle": l_sh_angle },
+        "right_shoulder": { "angle": r_sh_angle },
+        # -----------------------------------
+
+        "left_hand": {
+            "angle": angle_between(pix["left_wr"], pix["left_index"])
+        },
+        "right_hand": {
+            "angle": angle_between(pix["right_wr"], pix["right_index"])
+        },
+
         "head": {
             "pos": list(pix["nose"]),
             "pos_norm": norm(lm[pairs["nose"]]),
@@ -106,7 +149,6 @@ def compute_pose_data(landmarks, width, height):
     data.update(norm_pos)
     return data
 
-
 # -------------------------------------------------------
 # WebSocket server
 # -------------------------------------------------------
@@ -123,7 +165,6 @@ async def ws_handler(websocket):
     finally:
         clients.remove(websocket)
         print("Client disconnected")
-
 
 # -------------------------------------------------------
 # Pose loop + camera window
@@ -176,7 +217,6 @@ async def broadcast_pose_loop(cap_index=0):
 
     cap.release()
     cv2.destroyAllWindows()
-
 
 # -------------------------------------------------------
 # Main entry
