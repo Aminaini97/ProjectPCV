@@ -119,17 +119,22 @@ const boneMap = {
     "left_shoulder": "CC_Base_L_Clavicle_049",  // Sesuai list kamu (Left -> L)
     "right_shoulder": "CC_Base_R_Clavicle_077", // Sesuai list kamu (Right -> R)
     // ---------------------
-    "left_hand": "CC_Base_L_Hand_083",
+    "left_hand": "CC_Base_L_Hand_055",
     "left_upper_arm": "CC_Base_L_Upperarm_050",
     "left_lower_arm": "CC_Base_L_Forearm_051",
-    "right_hand": "CC_Base_R_Hand_055",
+    "right_hand": "CC_Base_R_Hand_083",
     "right_upper_arm": "CC_Base_R_Upperarm_078",
     "right_lower_arm": "CC_Base_R_Forearm_079",
     "left_upper_leg": "CC_Base_L_Thigh_04",
     "left_lower_leg": "CC_Base_L_Calf_05",
     "right_upper_leg": "CC_Base_R_Thigh_018",
     "right_lower_leg": "CC_Base_R_Calf_019",
-    "head": "CC_Base_Head_038"
+    "head": "CC_Base_Head_038",
+
+    // Kita ambil Twist01 (biasanya induk dari twist lainnya)
+    // Ingat Mirroring: Left Python -> Right Avatar
+    "left_arm_twist": "CC_Base_R_ForearmTwist01_081", 
+    "right_arm_twist": "CC_Base_L_ForearmTwist01_052",
 };
 
 let boneCache = {};
@@ -208,11 +213,16 @@ const boneOffsetMap = {
     "right_upper_arm": new THREE.Euler(0, 0, Math.PI),
     "left_lower_arm": new THREE.Euler(0, 0, 0),
     "right_lower_arm": new THREE.Euler(0, 0, Math.PI),
-    // KIRI: Putar sumbu X -90 derajat
-    "left_hand": new THREE.Euler(-Math.PI / 2, 0, Math.PI),
+    // 1. TWIST BONE (DAGING LENGAN) -> PINDAH KE SUMBU Y (Tengah)
+    // Jangan di X (angka pertama), tapi di Y (angka kedua) biar ga patah.
+    "left_arm_twist": new THREE.Euler(0, Math.PI / 2, 0),
+    "right_arm_twist": new THREE.Euler(0, -Math.PI / 2, 0),
 
-    // KANAN: Putar sumbu X -90 derajat juga (biasanya simetris untuk twist)
-    "right_hand": new THREE.Euler(-Math.PI / 2, 0, 0),
+    // 2. HAND (PERGELANGAN) -> BIARKAN DI X (Depan)
+    // Kalau telapak sudah menghadap layar, biarkan ini di X.
+    // Tapi jika sambungannya masih aneh, coba pindah ke Y juga: new THREE.Euler(0, -Math.PI / 2, 0)
+    "left_hand": new THREE.Euler(0, -Math.PI / 2, 0),
+    "right_hand": new THREE.Euler(0, Math.PI / 2, 0),
 };
 
 function applyAngleToBone(key, degAngle) {
@@ -272,14 +282,23 @@ function handlePose(pose) {
             avatar.position.y += ((-1.0 + moveY) - avatar.position.y) * 0.1;
             */
         }
+
     }
     // -------------------------------------------
     
     for (const key in boneMap) {
+        if (key === "left_hand" || key === "right_hand") continue;
+
         if (pose[key] && boneCache[key]) {
             applyAngleToBone(key, pose[key].angle || 0);
         }
     }
+
+    applyAngleToBone("left_arm_twist", 0);
+    applyAngleToBone("right_arm_twist", 0);
+
+    applyAngleToBone("left_hand", 0);
+    applyAngleToBone("right_hand", 0);
 }
 
 function animate() {
