@@ -5,6 +5,18 @@ const PLACEHOLDER_IMG = "/mnt/data/7d7feff8-b56e-4df4-8200-e0cafa94af81.png";
 let scene = new THREE.Scene();
 scene.background = new THREE.Color(0x333333);
 
+//untuk tugas 2
+//BACKGROUND MAP
+const bgColorMap = {
+    "MERAH": 0xff0000,
+    "BIRU": 0x0000ff,
+    "HIJAU": 0x00ff00,
+    "KUNING": 0xffff00,
+    "NONE": 0x333333
+};
+let lastBgColor = "NONE";
+let targetBgColor = new THREE.Color(0x333333);
+
 let camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
 camera.position.set(0, 1.5, 4);
 
@@ -87,13 +99,26 @@ function createSocket() {
     };
 
     socket.onmessage = (evt) => {
-        try {
-            const msg = JSON.parse(evt.data);
-            if (msg.type === 'pose') handlePose(msg.payload);
-        } catch (e) {
-            console.warn('Invalid WS message', e);
+    try {
+        const msg = JSON.parse(evt.data);
+
+        if (msg.type === 'pose') {
+            handlePose(msg.payload);
+
+            // ✅ BACKGROUND DARI PYTHON
+            const detectedColor = msg.payload.detected_color;
+            if (detectedColor && detectedColor !== lastBgColor) {
+                const hexColor = bgColorMap[detectedColor] || 0x333333;
+                targetBgColor = new THREE.Color(hexColor);
+                lastBgColor = detectedColor;
+            }
         }
-    };
+
+    } catch (e) {
+        console.warn('Invalid WS message', e);
+    }
+};
+
 
     socket.onerror = (e) => { console.error('WebSocket error', e); };
     socket.onclose = (e) => {
@@ -303,10 +328,17 @@ function handlePose(pose) {
 
 function animate() {
     requestAnimationFrame(animate);
+
+    // ✅ TRANSISI HALUS BACKGROUND
+    if (scene.background instanceof THREE.Color) {
+        scene.background.lerp(targetBgColor, 0.05);
+    }
+
     if (mixer) mixer.update(0.016);
     renderer.render(scene, camera);
 }
 animate();
+
 
 window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
