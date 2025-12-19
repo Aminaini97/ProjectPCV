@@ -167,9 +167,3 @@ Project body tracker 3D VTuber ini berhasil mengimplementasikan sistem tracking 
 - Gesture recognition
 - Voice integration
 - Mobile device support
-
-## Referensi
-
-- MediaPipe Pose: https://google.github.io/mediapipe/solutions/pose.html
-- Three.js: https://threejs.org/
-- WebSocket Protocol: https://tools.ietf.org/html/rfc6455
