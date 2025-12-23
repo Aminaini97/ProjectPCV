@@ -4,6 +4,11 @@
 
 Project ini adalah implementasi sistem body tracker 3D yang menggunakan teknologi WebSocket untuk komunikasi real-time antara server Python dan klien web Three.js. Sistem ini memungkinkan tracking pose tubuh manusia melalui kamera dan memetakannya ke model 3D avatar dalam lingkungan web.
 
+
+https://github.com/user-attachments/assets/01ebe723-09e9-4fcb-beaf-82dd13c619af
+
+
+
 ## Arsitektur Sistem
 
 ### Komponen Utama
